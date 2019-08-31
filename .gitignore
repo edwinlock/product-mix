@@ -1,0 +1,5 @@
+venv/*
+.DS_Store
+disjointset/*
+!disjointset/setup.py
+!disjointset/disjointset.pyx
