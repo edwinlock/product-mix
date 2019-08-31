@@ -1,0 +1,19 @@
+{
+	"title": "Example 1",
+	"date": "2019-05-29 21:51:38.393871",
+	"goods": 2,
+	"bidders": 1,
+	"epsilon": 0.0625,
+	"supply": [1,1],
+	"bidlists": [
+		[
+			{ "weight": 1, "vector": [1,2] },
+			{ "weight": 1, "vector": [2,1] },
+			{ "weight": 1, "vector": [4,4] },
+			{ "weight": -1, "vector": [2,2] },
+			{ "weight": 1, "vector": [0,3] },
+			{ "weight": 1, "vector": [4,2] },
+			{ "weight": 1, "vector": [5,1] }
+		]
+	]
+}

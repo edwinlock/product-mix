@@ -15,48 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-"""We denote by BGKL the working paper by Elizabeth Baldwin, Paul Goldberg,
-Paul Klemperer and Edwin Lock.
-
-This is an implementation of the Product-Mix Auction of Paul Klemperer and the
-algorithms presented in BGKL to solve the auction, consisting of two parts:
-
-1) Find the component-wise minimal market-clearing price using a steepest
-descent approach. Both long-step methods described in the paper are
-implemented.
-
-2) Find an allocation of the supply (=target) bundle among the various bidders
-so that each bidder receives a bundle they demand at the market-clearing price.
-
-### Usage ###
-
-Load an allocation problem from a file
-> alloc = load_from_json('examples/example2.json')
-
-Find a market-clearing price using unit step steepest descent
-> prices = min_up(alloc, long_step_routine="")
-
-Find market-clearing prices using long step steepest descent
-> prices = min_up(alloc, long_step_routine="demandchange")
-or
-> prices = min_up(alloc, long_step_routine="binarysearch")
-
-Find an allocation
-> allocation = allocate(alloc)
-
-Check validity of bid lists
-> is_valid(alloc)
-
-Compute Lyapunov function at prices p
-> lyapunov(alloc, p)
-
-Get a demanded bundle at prices p (not necessarily unique!)
-> demanded_bundle(alloc, p)
-"""
-
 import numpy as np
-from fujishige_wolfe import fw_sfm, naive_sfm
-from disjointset import DisjointSet
+from sfm.fujishige_wolfe import fw_sfm, naive_sfm
+from disjointset.disjointset import DisjointSet
 import itertools
 import json
 import datetime
@@ -83,6 +44,15 @@ class AllocationProblem:
         self.prices = np.zeros(self.n, dtype=float)
         self.residual = np.zeros(self.n)
         self.partial = [np.zeros(self.n) for _ in self.bidders]
+
+def print_debug(alloc):
+    print('Debug output:')
+    for j in alloc.bidders:
+        print('Bidder {}'.format(j))
+        print("Bid vectors\n", alloc.bidlists[j])
+        print("Bid weights\n", alloc.weights[j])
+        print("Partial allocation\n", alloc.partial[j])
+    print("Residual\n", alloc.residual)
 
 def add_bids():
     """TO DO"""
@@ -369,77 +339,187 @@ def procedure3(alloc, i, j):
     # Unshift
     shift(alloc.bidlists[j], i, -alloc.eps)
 
-def find_params(alloc):
-    """Implements FindParams from BGKL."""
-    # Step 1: get derived graph
-    link_neighbours, key_neighbours, keylists = derived_graph(alloc)
-    keylist_len = len(keylists)
-
-    # Step 2a: If some key list is isolated, return it
-    for k in key_neighbours:
-        if len(key_neighbours[k]) == 0:
-            return (keylists[k], None)
-        elif len(key_neighbours[k]) == 1:
-            i = key_neighbours[k][0]
-            return (keylists[k], i)
-
-    # Step 2b: take a walk between the two vertex sets
-    current_vx = iter(link_neighbours).next()  # pick starting link good
-    prev_vx = None  # we store the previous vx so we don't walk backwards
-    next_vx = None
-    current_vx_is_linkgood = True
-
-    # keep track of link goods and key lists visited
-    keylists_visited = set()
-    linkgoods_visited = set()
-    linkgoods_visited.add(current_vx)
-
-    # perform walk
-    while True:
-        if current_vx_is_linkgood:
-            # Determine next vx in walk, which is a neighbouring keylist
-            next_vx = link_neighbours[current_vx][0]
-            if prev_vx == next_vx:  # we don't want to walk backwards
-                next_vx = link_neighbours[current_vx][1]
-
-            # Check whether we have found a cycle
-            if next_vx in keylists_visited:  # cycle found
-                # Return the last key list and link good visited
-                j = keylists[next_vx][1]
-                i = current_vx
-                return ((None, j), i)
-            else:  # no cycle found
-                # Make step by updating variables
-                prev_vx = current_vx
-                current_vx = next_vx
-                keylists_visited.add(current_vx)
-
-        else:  # current_vx is a keylist
-            next_vx = key_neighbours[current_vx][0]
-            if prev_vx == next_vx:  # we don't want to walk backwards
-                next_vx = key_neighbours[current_vx][1]
-
-            # Check whether we have found a cycle
-            if next_vx in linkgoods_visited:  # we have found a cycle
-                # Return the last key list and link good visited
-                i = next_vx
-                j = keylists[current_vx][1]
-                return ((None, j), i)
-            else:  # no cycle found
-                prev_vx = current_vx
-                current_vx = next_vx
-                linkgoods_visited.add(current_vx)
-
-        # Update current vx type
-        current_vx_is_linkgood = not current_vx_is_linkgood
-
-def print_debug(alloc):
+def get_keylists(alloc):
+    """Computes and returns all key lists of the marginal bids graph associated
+     with the allocation problem given in the input.
+    """
+    keylists = []
     for j in alloc.bidders:
-        print 'Bidder {}'.format(j)
-        print "Bid vectors\n", alloc.bidlists[j]
-        print "Bid weights\n", alloc.weights[j]
-        print "Partial allocation\n", alloc.partial[j]
-    print "Residual\n", alloc.residual
+        """Generate vertex sets corresponding to the connected components of
+        the graph induced by all j-labelled edges in the marginal bids graph.
+        Uses disjoint set data structure implemented by the DisjointSet class
+        (see disjointset.pyx)."""
+        DS = DisjointSet(alloc.n) 
+        demand_vectors = get_demand_vectors(alloc.bidlists[j], alloc.prices)
+        DS.bulk_union(demand_vectors)
+        # Add vertex set and bidder j label as a keylist.
+        for vx_set in DS.vertex_sets():
+            keylists.append((vx_set, j))
+    return keylists
+    
+def derived_graph(alloc):
+    """Computes a derived graph and returns adjacency lists for the link
+    goods and key lists.
+    """
+    # Compute all key lists
+    keylists = get_keylists(alloc)
+    # Compute number of keylists.
+    keylist_len = len(keylists)
+    # Count number of keylists in which each good appears.
+    good_counter = {i: 0 for i in alloc.goods}
+    for k in range(keylist_len):
+        for good in keylists[k][0]:
+            good_counter[good] += 1    
+    # Initialise adjacency dict (neighbours) for the link goods and key lists
+    # In the neighbours dict, link goods are represented by their good number
+    # and the k-th keylist is represented by the number alloc.n+k.
+    neighbours = {i: [] for i in alloc.goods if good_counter[i] > 1}
+    neighbours.update({k: [] for k in range(alloc.n, alloc.n + keylist_len)})
+    # Determine the neighbour lists for link goods and key lists.
+    for k in range(keylist_len):
+        for good in keylists[k][0]:
+            if good_counter[good] > 1:  # good is a link good
+                # Add edge between good and keylist (=alloc.n+k)
+                neighbours[good].append(alloc.n+k)
+                neighbours[alloc.n+k].append(good)
+    return neighbours, keylists
+    
+# def derived_graph(alloc):
+#     """Computes a derived graph and returns adjacency lists for the link
+#     goods and key lists.
+#     """
+#     # Compute all key lists
+#     keylists = []
+#     for j in alloc.bidders:
+#         """Generate vertex sets corresponding to the connected components of
+#         the graph induced by all j-labelled edges in the marginal bids graph.
+#         Uses disjoint set data structure implemented by the DisjointSet class
+#         (see disjointset.pyx)."""
+#         DS = DisjointSet(alloc.n)
+#         demand_vectors = get_demand_vectors(alloc.bidlists[j], alloc.prices)
+#         DS.bulk_union(demand_vectors)
+#         # Add vertex set and bidder j label as a keylist.
+#         for vx_set in DS.vertex_sets():
+#             keylists.append((vx_set, j))
+#
+#     # Compute number of keylists.
+#     keylist_len = len(keylists)
+#     # Count number of keylists in which each good appears.
+#     good_counter = {i: 0 for i in alloc.goods}
+#     for k in range(keylist_len):
+#         for good in keylists[k][0]:
+#             good_counter[good] += 1
+#
+#     # Initialise the adjacency dicts for the link goods and key lists.
+#     key_neighbours = {k: [] for k in range(keylist_len)}
+#     link_neighbours = {i: [] for i in alloc.goods if good_counter[i] > 1}
+#
+#     # Determine the neighbour lists for link goods and key lists.
+#     for k in range(keylist_len):
+#         for good in keylists[k][0]:
+#             if good_counter[good] > 1:  # good is a link good
+#                 # Add edge between good and k
+#                 key_neighbours[k].append(good)
+#                 link_neighbours[good].append(k)
+#
+#     return link_neighbours, key_neighbours, keylists
+
+def find_params(alloc):
+    # Get derived graph
+    neighbours, keylists = derived_graph(alloc)
+    # Step 2a: If a key list is isolated or has only one link good, return it
+    for k in range(alloc.n, alloc.n+len(keylists)):
+        if len(neighbours[k]) == 0:
+            return (keylists[k-alloc.n], None)
+        elif len(neighbours[k]) == 1:
+            i = neighbours[k][0]
+            return (keylists[k-alloc.n], i)
+    # Step 2b: Take a walk through the derived graph to find a cycle
+    prev_vx, curr_vx, next_vx = None, None, next(iter(neighbours))
+    visited_vxs = set()
+    curr_vx_is_linkgood = False
+    while next_vx not in visited_vxs:  # walk until we find a cycle
+        # Take a step
+        prev_vx = curr_vx
+        curr_vx = next_vx
+        visited_vxs.add(curr_vx)
+        curr_vx_is_linkgood = not curr_vx_is_linkgood
+        # Pick next vertex to visit
+        next_vx = neighbours[curr_vx][0]
+        if prev_vx == next_vx:  # we don't want to walk backwards
+            next_vx = neighbours[curr_vx][1]
+    if  curr_vx_is_linkgood:
+        i, j = curr_vx, keylists[next_vx-alloc.n][1]
+    else:
+        i, j = next_vx, keylists[curr_vx-alloc.n][1]
+    return ((None, j), i)
+
+# def find_params(alloc):
+#     """Implements FindParams from BGKL."""
+#     # Step 1: get derived graph
+#     link_neighbours, key_neighbours, keylists = derived_graph(alloc)
+#     keylist_len = len(keylists)
+#
+#     # Step 2a: If a key list is isolated or has only one link good, return it
+#     for k in key_neighbours:
+#         if len(key_neighbours[k]) == 0:
+#             return (keylists[k], None)
+#         elif len(key_neighbours[k]) == 1:
+#             i = key_neighbours[k][0]
+#             return (keylists[k], i)
+#
+#     # Step 2b: take a walk between the two vertex sets
+#     current_vx = next(iter(link_neighbours))  # pick starting link good
+#     prev_vx = None  # we store the previous vx so we don't walk backwards
+#     next_vx = None
+#     current_vx_is_linkgood = True
+#
+#     # keep track of link goods and key lists visited
+#     keylists_visited = set()
+#     linkgoods_visited = set()
+#     linkgoods_visited.add(current_vx)
+#
+#     # perform walk
+#     while True:
+#         print('current vx:', current_vx)
+#         if current_vx_is_linkgood:
+#             # Determine next vx in walk, which is a neighbouring keylist
+#             next_vx = link_neighbours[current_vx][0]
+#             if prev_vx == next_vx:  # we don't want to walk backwards
+#                 next_vx = link_neighbours[current_vx][1]
+#
+#             # Check whether we have found a cycle
+#             if next_vx in keylists_visited:  # cycle found
+#                 # Return the last key list and link good visited
+#                 j = keylists[next_vx][1]
+#                 i = current_vx
+#                 print ((None, j), i)
+#                 return ((None, j), i)
+#             else:  # no cycle found
+#                 # Make step by updating variables
+#                 prev_vx = current_vx
+#                 current_vx = next_vx
+#                 keylists_visited.add(current_vx)
+#
+#         else:  # current_vx is a keylist
+#             next_vx = key_neighbours[current_vx][0]
+#             if prev_vx == next_vx:  # we don't want to walk backwards
+#                 next_vx = key_neighbours[current_vx][1]
+#
+#             # Check whether we have found a cycle
+#             if next_vx in linkgoods_visited:  # we have found a cycle
+#                 # Return the last key list and link good visited
+#                 i = next_vx
+#                 j = keylists[current_vx][1]
+#                 print ((None, j), i)
+#                 return ((None, j), i)
+#             else:  # no cycle found
+#                 prev_vx = current_vx
+#                 current_vx = next_vx
+#                 linkgoods_visited.add(current_vx)
+#
+#         # Update current vx type
+#         current_vx_is_linkgood = not current_vx_is_linkgood
 
 def allocate(alloc, test=False):
     """Implements the main routine ALLOCATE from BKGL. IMPORTANT:
@@ -469,46 +549,6 @@ def allocate(alloc, test=False):
             else:  # there is no key list with at most one link good
                 proc3 += 1
                 procedure3(alloc, i, j)
-
-def derived_graph(alloc):
-    """Computes a derived graph and returns adjacency lists for the link
-    goods and key lists.
-    """
-    # Compute all key lists
-    keylists = []
-    for j in alloc.bidders:
-        # Generate the vertex sets corresponding to the connected
-        # components of the graph induced by all j-labelled edges in the
-        # marginal bids graph. Uses disjoint set data structure implemented by 
-        # the DisjointSet class (see disjointset.pyx).
-        DS = DisjointSet(alloc.n)    
-        demand_vectors = get_demand_vectors(alloc.bidlists[j], alloc.prices)
-        DS.bulk_union(demand_vectors)
-        # Add vertex set and bidder j label as a keylist.
-        for vx_set in DS.vertex_sets():
-            keylists.append((vx_set, j))
-
-    # Compute number of keylists.
-    keylist_len = len(keylists)
-    # Count number of keylists in which each good appears.
-    good_counter = {i: 0 for i in alloc.goods}
-    for k in range(keylist_len):
-        for good in keylists[k][0]:
-            good_counter[good] += 1
-
-    # Initialise the adjacency dicts for the link goods.
-    key_neighbours = {k: [] for k in range(keylist_len)}
-    link_neighbours = {i: [] for i in alloc.goods if good_counter[i] > 1}
-
-    # Determine the neighbour lists for link goods and key lists.
-    for k in range(keylist_len):
-        for good in keylists[k][0]:
-            if good_counter[good] > 1:  # good is a link good
-                # Add edge between good and k
-                key_neighbours[k].append(good)
-                link_neighbours[good].append(k)
-
-    return link_neighbours, key_neighbours, keylists
 
 def _is_negative_H(alloc, p, i, bidder):
     """Checks whether H^p_i is negative or not (BGKL terminology)."""
@@ -541,7 +581,7 @@ def _md(alloc, U):
     """Returns the component-wise max vector over all the vectors in U.
     Input: set of numpy vectors.
     """
-    result = iter(U).next()
+    result = next(iter(U))
     for vector in U:
         result = np.maximum(result, vector)
     return result
@@ -569,18 +609,18 @@ def is_valid(alloc):
                 mdU = _md(alloc, U)
                 for i in range(1,alloc.n):
                     # Check whether the vectors in U agree on i-th coord
-                    val = iter(U).next()[i]
+                    val = next(iter(U))[i]
                     agree = all(map(lambda v: v[i] == val, U))
                     # Ensure that H^p_i is non-negative, with p = md(U)
                     if agree and _is_negative_H(alloc, mdU, i, bidder):
                         invalid_lists.add(bidder)
-                        print "Hod H^{}_{} is negative".format(mdU, i)
+                        print("Hod H^{}_{} is negative".format(mdU, i))
                         continue
 
                 # Flange checks
                 for i, j in itertools.combinations(range(1, alloc.n), 2):
                     # Check if the vectors in U agree on diff b[i]-b[j]
-                    vector = iter(U).next()
+                    vector = next(iter(U))
                     val = vector[i]-vector[j]
                     agree = all(map(lambda v: v[i]-v[j] == val, U))
                     if agree:
@@ -588,17 +628,16 @@ def is_valid(alloc):
                         mdFi = _mdF(alloc, i, U)
                         if _is_negative_F(alloc, mdFi, i, j, bidder):
                             invalid_lists.add(bidder)
-                            print "Flange F^{}_{}{} is negative".format(mdU,i,j)
+                            print("Flange F^{}_{}{} is negative".format(mdU,i,j))
                             continue
     return not invalid_lists
 
 ### AD HOC TESTS ###
 
 if __name__ == "__main__":
-    # filename = "experiments/experiment9/experiment-10-5-100-380-39.json"
-    # filename = "experiments/experiment8/experiment-2-5-100-500-48.json"
-    filename = 'test/new_test.json'
+    filename = 'example data/test3.json'
     alloc = load_from_json(filename)
-    print "supply: {}".format(alloc.residual)
+    print("supply: {}".format(alloc.residual))
     alloc.prices = min_up(alloc, long_step_routine="binarysearch")
-    print allocate(alloc)
+    print("prices:", alloc.prices)
+    print("allocation:", allocate(alloc))

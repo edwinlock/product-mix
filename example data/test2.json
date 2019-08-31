@@ -1,0 +1,42 @@
+{
+    "goods": 3, 
+    "supply": [3.0, 
+        4.0, 
+        1.0
+    ], 
+    "bidlists": [
+		[    
+			{ "vector": [33.0, 26.0, 50.0], "weight": 1 }, 
+            { "vector": [24.0, 50.0, 8.0], "weight": 1 }, 
+            { "vector": [69.0, 69.0, 69.0], "weight": -1 }, 
+            { "vector": [69.0, 69.0, 46.0], "weight": 1 }, 
+            { "vector": [69.0, 51.0, 69.0], "weight": 1 }, 
+            { "vector": [75.0, 75.0, 75.0], "weight": 1 }
+        ], 
+        [    
+			{ "vector": [50.0, 47.0, 50.0], "weight": -1 }, 
+            {"vector": [50.0, 9.0, 50.0], "weight": 1 }, 
+            { "vector": [19.0, 47.0, 50.0], "weight": 1}, 
+            { "vector": [92.0, 89.0, 92.0], "weight": 1 }, 
+            { "vector": [4.0, 81.0, 81.0], "weight": -1 }, 
+            { "vector": [4.0, 81.0, 72.0], "weight": 1 }, 
+            { "vector": [1.0, 81.0, 81.0], "weight": 1 }, 
+            { "vector": [16.0, 93.0, 93.0], "weight": 1 }, 
+            { "vector": [50.0, 11.0, 50.0], "weight": 1 }
+        ], 
+        [   
+			{"vector": [6.0, 39.0, 50.0], "weight": -1 }, 
+            { "vector": [6.0, 39.0, 29.0], "weight": 1 }, 
+            { "vector": [6.0, 19.0, 50.0], "weight": 1 }, 
+            { "vector": [49.0, 82.0, 93.0], "weight": 1 }, 
+            { "vector": [24.0, 50.0, 38.0], "weight": -1 }, 
+            { "vector": [24.0, 50.0, 23.0],"weight": 1 }, 
+            { "vector": [24.0, 31.0, 38.0], "weight": 1 }, 
+            { "vector": [26.0, 52.0, 40.0], "weight": 1 }, 
+            { "vector": [52.0, 88.0, 88.0], "weight": 1 }
+        ]
+    ], 
+    "title": "Auto-generated", 
+    "date": "2019-07-08", 
+    "bidders": 3
+}
