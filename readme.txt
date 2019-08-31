@@ -9,30 +9,49 @@ implemented.
 so that each bidder receives a bundle they demand at the market-clearing price.
 
 ### Installation ###
+These are brief instructions for macOS. They should also work for Linux systems. Please contact edwinlock@gmail.com if you have any issues.
 
+1. Install Python 3.3 or newer.
+2. Get the files from the GitHub server:
+'git clone https://github.com/edwinlock/product-mix.git'
+3. Set up a virtual environment (venv):
+'cd product-mix'
+'python -m venv venv'
+4. Activate virtual environment:
+'source venv/bin/activate'
+5. Install the dependencies:
+'pip install -r requirements.txt'
+6. Compile the derived graph Cython code:
+'cd disjointset'
+'python setup.py build_ext --inplace'
 
-### Usage ###
+### Example Usage ###
+
+Launch an interactive Python shell:
+'python'
+
+Import the product-mix package
+'from product-mix import productmix as pm'
 
 Load an allocation problem from a file
-> alloc = load_from_json('examples/example2.json')
+>>> alloc = pm.load_from_json('examples/example2.json')
 
 Find a market-clearing price using unit step steepest descent
-> prices = min_up(alloc, long_step_routine="")
+>>> prices = pm.min_up(alloc, long_step_routine="")
 
 Find market-clearing prices using long step steepest descent
-> prices = min_up(alloc, long_step_routine="demandchange")
+>>> prices = pm.min_up(alloc, long_step_routine="demandchange")
 or
-> prices = min_up(alloc, long_step_routine="binarysearch")
+>>> prices = pm.min_up(alloc, long_step_routine="binarysearch")
 
 Find an allocation
-> allocation = allocate(alloc)
+>>> allocation = pm.allocate(alloc)
 
 Check validity of bid lists
-> is_valid(alloc)
+>>> pm.is_valid(alloc)
 
 Compute Lyapunov function at prices p
-> lyapunov(alloc, p)
+>>> pm.lyapunov(alloc, p)
 
 Get a demanded bundle at prices p (not necessarily unique!)
-> demanded_bundle(alloc, p)
-"""
+>>> pm.demanded_bundle(alloc, p)
