@@ -21,21 +21,54 @@ from disjointset.disjointset import DisjointSet
 import itertools
 import json
 import datetime
-
-# Data structures
-# bidlists - a Python array of 2D numpy arrays with the following axes
-# First axis: j-th bid,
-# Second axis: k-th entry in bid
-# weights - 2D numpy array.  First axis: weights of i-th bidlist,
-#                                Second axis: weight of the j-th bid
-# prices - 1D numpy array
-# residual - 2D numpy array
-
+from typing import Dict, List, Optional
 
 class AllocationProblem:
-    def __init__(self, goods, bidders, eps = 0.0625):
-        self.n = goods+1  # add the reject good
-        self.m = bidders
+    """Implements a custom data structure for allocation problems.
+    
+    Parameters
+    ----------
+    good_no : int
+        number of goods (without nominal reject good)
+    bidder_no : int
+        number of bidders
+    eps : float, optional
+        amount by which bids are shifted in the allocation algorithm
+    
+    Attributes
+    ----------
+    n : int
+        Number of goods, including nominal reject good 0.
+    m : int
+        Number of bidders.
+    goods : list of int
+        List of goods [0,..,n-1] (including nominal reject good).
+    bidders : list of int
+        List of bidders [0,...,m-1]
+    eps : float
+        Amount by which bids are shifted in the allocation algorithm.
+    bidlists : list of 2d numpy arrays of floats
+        Each entry bidlists[j] is a 2d numpy array containing the bid vectors
+        of bidder j as row vectors, i.e. the k-th bid of bidder j is accessed
+        by bidlists[j][k].
+    weights : list of 1d numpy arrays of ints
+        Each entry weights[j] contains a one-dimensional numpy array
+        with the weights of the bids of bidder j, i.e. weights[j][k] stores
+        the weight of bidder j's k-th bid.
+    prices : numpy array of floats of dimension n
+        Stores a price vector with n entries, where the 0th entry is the
+        price for the reject good should always be 0.
+    residual : numpy array of floats of dimension n
+        Denotes the items of the supply bundle (including notional reject
+        items) that have not yet been allocated.
+    partial : list of 1d numpy arrays of floats of dimension n
+        For each bidder, we store which items of goods (including nominal
+        reject items) they have already been allocated.
+    """
+    
+    def __init__(self, good_no, bidder_no, eps = 0.0625):
+        self.n = good_no+1  # includes the 'reject' good
+        self.m = bidder_no
         self.goods = range(self.n)  # including reject good
         self.bidders = range(self.m)
         self.eps = eps
@@ -44,21 +77,28 @@ class AllocationProblem:
         self.prices = np.zeros(self.n, dtype=float)
         self.residual = np.zeros(self.n)
         self.partial = [np.zeros(self.n) for _ in self.bidders]
+    
+    def __str__(self):
+        """Provides a string representing instance, mainly for debugging."""
+        
+        output = "prices: {}\n".format(self.prices)
+        output += "residual: {}\n".format(self.residual)
+        for j in self.bidders:
+            output += "bidder {}\'s data:\n".format(j)
+            output += "bidlist: {}\n".format(self.bidlists[j])
+            output += "weights: {}\n".format(self.weights[j])
+            output += "partial: {}".format(self.partial)
+        return output
 
-def print_debug(alloc):
-    print('Debug output:')
-    for j in alloc.bidders:
-        print('Bidder {}'.format(j))
-        print("Bid vectors\n", alloc.bidlists[j])
-        print("Bid weights\n", alloc.weights[j])
-        print("Partial allocation\n", alloc.partial[j])
-    print("Residual\n", alloc.residual)
 
-def add_bids():
-    """TO DO"""
-    pass
+# TODO: add the following function
+# def add_bids():
+#     """TO DO"""
+#     pass
 
-def load_from_json(filename):
+def load_from_json(filename: str) -> AllocationProblem:
+    """Loads an allocation problem from a JSON file."""
+    
     # Read data from file
     with open(filename) as input_file:
         data = json.load(input_file)
@@ -87,8 +127,10 @@ def load_from_json(filename):
     alloc.residual = np.array([reject_items] + data['supply'], dtype=float)
     return alloc
     
-def save_to_json(alloc, filename = None):
+def save_to_json(alloc: AllocationProblem,
+                 filename: Optional[str] = None) -> None:
     """Store the allocation problem encoded in the bid lists as a JSON file."""
+    
     data = {}
     data['title'] = "Auto-generated"
     data['date'] = str(datetime.date.today())
@@ -108,15 +150,14 @@ def save_to_json(alloc, filename = None):
     with open(filename, 'w') as output_file:
         json.dump(data, output_file, indent=4)
 
-def demanded_goods(bid_vector, p):
-    """Determine and return the set of goods demanded by bid_vector at p.
-    Returns a Python set.
-    """
+def demanded_goods(bid_vector: np.ndarray, p: np.ndarray) -> set:
+    """Determine and return the set of goods demanded by bid_vector at p."""
+    
     diff = bid_vector - p
     max_utility = diff.max()
     return np.nonzero(diff == max_utility)[0]
 
-def get_demand_vectors(bidlist, p):
+def get_demand_vectors(bidlist: np.ndarray, p: np.ndarray) -> np.ndarray:
     diff = bidlist - p
     utility = diff.max(axis=1, keepdims=1)
     # initialise demand_vectors
@@ -125,14 +166,14 @@ def get_demand_vectors(bidlist, p):
     np.equal(diff, utility, out = demand_vectors)
     return demand_vectors
 
-def shift(bidlist, i, eps):
+def shift(bidlist: np.ndarray, i: int, eps: float) -> None:
     """Shifts all vectors in bidlist by eps in direction i."""
     n = bidlist.shape[1]
     char_vector = np.zeros(n)
     char_vector[i] += eps
     bidlist += char_vector
 
-def project(bidlists, prices):
+def project(bidlists: np.ndarray, prices: np.ndarray) -> None:
     """Projects bid vectors of all bidders according to prices."""
     n = len(prices)
     for bidlist in bidlists:
@@ -146,7 +187,7 @@ def project(bidlists, prices):
         subtract = np.repeat(demands_reject, n, axis=1)
         bidlist -= subtract
 
-def lyapunov(alloc, prices):
+def lyapunov(alloc: AllocationProblem, prices: np.ndarray) -> float:
     """Implements the Lyapunov function. Efficient implementation.
     """
     output = np.dot(alloc.residual, prices)
@@ -156,7 +197,7 @@ def lyapunov(alloc, prices):
         output += np.dot(utilities, alloc.weights[j])
     return output
 
-def demanded_bundle(alloc, prices):
+def demanded_bundle(alloc: AllocationProblem, prices: np.ndarray) -> np.ndarray:
     """Returns a bundle that is demanded at p by accepting, for each bid, the
     smallest good demanded at p.
     """
@@ -168,7 +209,9 @@ def demanded_bundle(alloc, prices):
             bundle[smallest_good] += alloc.weights[j][i]
     return bundle
 
-def min_up(alloc, long_step_routine="binarysearch", prices = None, test=False):
+def min_up(alloc: AllocationProblem,
+           long_step_routine: str ="binarysearch",
+           prices: np.ndarray = None) -> np.ndarray:
     """Implements the MinUp algorithm from BGKL. This is a steepest
     descent algorithm starting from the origin; uses SFM to find the
     direction.
@@ -186,10 +229,7 @@ def min_up(alloc, long_step_routine="binarysearch", prices = None, test=False):
         S = fw_sfm(alloc.n-1, g_dash)
         S = {i+1 for i in S}
         if not S:  # S is empty, minimiser found
-            if test:
-                return p, steps
-            else:
-                return p
+            return p
         else:  # determine the steepest descent direction from S
             d = np.zeros(alloc.n)
             for s in S:
@@ -383,46 +423,6 @@ def derived_graph(alloc):
                 neighbours[good].append(alloc.n+k)
                 neighbours[alloc.n+k].append(good)
     return neighbours, keylists
-    
-# def derived_graph(alloc):
-#     """Computes a derived graph and returns adjacency lists for the link
-#     goods and key lists.
-#     """
-#     # Compute all key lists
-#     keylists = []
-#     for j in alloc.bidders:
-#         """Generate vertex sets corresponding to the connected components of
-#         the graph induced by all j-labelled edges in the marginal bids graph.
-#         Uses disjoint set data structure implemented by the DisjointSet class
-#         (see disjointset.pyx)."""
-#         DS = DisjointSet(alloc.n)
-#         demand_vectors = get_demand_vectors(alloc.bidlists[j], alloc.prices)
-#         DS.bulk_union(demand_vectors)
-#         # Add vertex set and bidder j label as a keylist.
-#         for vx_set in DS.vertex_sets():
-#             keylists.append((vx_set, j))
-#
-#     # Compute number of keylists.
-#     keylist_len = len(keylists)
-#     # Count number of keylists in which each good appears.
-#     good_counter = {i: 0 for i in alloc.goods}
-#     for k in range(keylist_len):
-#         for good in keylists[k][0]:
-#             good_counter[good] += 1
-#
-#     # Initialise the adjacency dicts for the link goods and key lists.
-#     key_neighbours = {k: [] for k in range(keylist_len)}
-#     link_neighbours = {i: [] for i in alloc.goods if good_counter[i] > 1}
-#
-#     # Determine the neighbour lists for link goods and key lists.
-#     for k in range(keylist_len):
-#         for good in keylists[k][0]:
-#             if good_counter[good] > 1:  # good is a link good
-#                 # Add edge between good and k
-#                 key_neighbours[k].append(good)
-#                 link_neighbours[good].append(k)
-#
-#     return link_neighbours, key_neighbours, keylists
 
 def find_params(alloc):
     # Get derived graph
@@ -453,73 +453,6 @@ def find_params(alloc):
     else:
         i, j = next_vx, keylists[curr_vx-alloc.n][1]
     return ((None, j), i)
-
-# def find_params(alloc):
-#     """Implements FindParams from BGKL."""
-#     # Step 1: get derived graph
-#     link_neighbours, key_neighbours, keylists = derived_graph(alloc)
-#     keylist_len = len(keylists)
-#
-#     # Step 2a: If a key list is isolated or has only one link good, return it
-#     for k in key_neighbours:
-#         if len(key_neighbours[k]) == 0:
-#             return (keylists[k], None)
-#         elif len(key_neighbours[k]) == 1:
-#             i = key_neighbours[k][0]
-#             return (keylists[k], i)
-#
-#     # Step 2b: take a walk between the two vertex sets
-#     current_vx = next(iter(link_neighbours))  # pick starting link good
-#     prev_vx = None  # we store the previous vx so we don't walk backwards
-#     next_vx = None
-#     current_vx_is_linkgood = True
-#
-#     # keep track of link goods and key lists visited
-#     keylists_visited = set()
-#     linkgoods_visited = set()
-#     linkgoods_visited.add(current_vx)
-#
-#     # perform walk
-#     while True:
-#         print('current vx:', current_vx)
-#         if current_vx_is_linkgood:
-#             # Determine next vx in walk, which is a neighbouring keylist
-#             next_vx = link_neighbours[current_vx][0]
-#             if prev_vx == next_vx:  # we don't want to walk backwards
-#                 next_vx = link_neighbours[current_vx][1]
-#
-#             # Check whether we have found a cycle
-#             if next_vx in keylists_visited:  # cycle found
-#                 # Return the last key list and link good visited
-#                 j = keylists[next_vx][1]
-#                 i = current_vx
-#                 print ((None, j), i)
-#                 return ((None, j), i)
-#             else:  # no cycle found
-#                 # Make step by updating variables
-#                 prev_vx = current_vx
-#                 current_vx = next_vx
-#                 keylists_visited.add(current_vx)
-#
-#         else:  # current_vx is a keylist
-#             next_vx = key_neighbours[current_vx][0]
-#             if prev_vx == next_vx:  # we don't want to walk backwards
-#                 next_vx = key_neighbours[current_vx][1]
-#
-#             # Check whether we have found a cycle
-#             if next_vx in linkgoods_visited:  # we have found a cycle
-#                 # Return the last key list and link good visited
-#                 i = next_vx
-#                 j = keylists[current_vx][1]
-#                 print ((None, j), i)
-#                 return ((None, j), i)
-#             else:  # no cycle found
-#                 prev_vx = current_vx
-#                 current_vx = next_vx
-#                 linkgoods_visited.add(current_vx)
-#
-#         # Update current vx type
-#         current_vx_is_linkgood = not current_vx_is_linkgood
 
 def allocate(alloc, test=False):
     """Implements the main routine ALLOCATE from BKGL. IMPORTANT:
@@ -638,6 +571,7 @@ if __name__ == "__main__":
     filename = 'example data/test3.json'
     alloc = load_from_json(filename)
     print("supply: {}".format(alloc.residual))
+    print(alloc.weights)
     alloc.prices = min_up(alloc, long_step_routine="binarysearch")
     print("prices:", alloc.prices)
     print("allocation:", allocate(alloc))

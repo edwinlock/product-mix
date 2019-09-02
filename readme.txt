@@ -31,7 +31,7 @@ Launch an interactive Python shell:
 'python'
 
 Import the product-mix package
->>> from product-mix import productmix as pm'
+>>> from product-mix import productmix as pm
 
 Load an allocation problem from a file
 >>> alloc = pm.load_from_json('examples/example2.json')
