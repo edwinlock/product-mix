@@ -1,3 +1,2 @@
 Cython==0.29.13
-gnureadline==8.0.0
 numpy==1.17.1
