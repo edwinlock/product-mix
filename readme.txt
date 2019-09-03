@@ -11,24 +11,26 @@ so that each bidder receives a bundle they demand at the market-clearing price.
 ### Installation ###
 These are brief instructions for macOS. They should also work for Linux systems. Please contact edwinlock@gmail.com if you have any issues.
 
-1. Install Python 3.3 or newer.
+1. Install Python 3.5 or newer.
 2. Get the files from the GitHub server:
-'git clone https://github.com/edwinlock/product-mix.git'
+$ git clone https://github.com/edwinlock/product-mix.git
 3. Set up a virtual environment (venv):
-'cd product-mix'
-'python -m venv venv'
+$ cd product-mix
+$ python -m venv venv
 4. Activate virtual environment:
-'source venv/bin/activate'
+$ source venv/bin/activate
 5. Install the dependencies:
-'pip install -r requirements.txt'
+$ pip install -r requirements.txt
 6. Compile the derived graph Cython code:
-'cd disjointset'
-'python setup.py build_ext --inplace'
+$ cd disjointset
+$ python setup.py build_ext --inplace
 
 ### Example Usage ###
 
-Launch an interactive Python shell:
-'python'
+Activate the virtual environment and launch an interactive Python shell:
+$ cd ..path../product-mix
+$ source venv/bin/activate
+$ python
 
 Import the product-mix package
 >>> from product-mix import productmix as pm
