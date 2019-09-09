@@ -1,19 +1,56 @@
 # -*- coding: utf-8 -*-
-#
-# Copyright 2019 by Edwin Lock
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, see <http://www.gnu.org/licenses/>.
+""" This module is an implementation of the Product-Mix auction originally developed by Paul Klemperer (cf. https://www.nuffield.ox.ac.uk/users/klemperer/productmix.pdf).
+
+Specifically, we present an implementation of the algorithms developed in the working paper by Elizabeth Baldwin, Paul Goldberg,
+Paul Klemperer and Edwin Lock available on the ArXiv at [URL]. The algorithms solve the Product-Mix Auction; that is, they find a competitive (Walrasian) equilibrium. Computing the equilibrium can be separated into two parts:
+
+1) Find the component-wise minimal market-clearing price using a steepest
+descent approach. Both long-step methods described in the paper are
+implemented.
+
+2) Find an allocation of the supply (=target) bundle among the various bidders
+so that each bidder receives a bundle they demand at the market-clearing price.
+
+Examples
+-------
+Launch an interactive Python shell
+$ python
+
+Import the product-mix package
+>>> from product-mix import productmix as pm
+
+Load an allocation problem from a file
+>>> alloc = pm.load_from_json('examples/example2.json')
+
+Find a market-clearing price using unit step steepest descent
+>>> prices = pm.min_up(alloc, long_step_routine="")
+
+Find market-clearing prices using long step steepest descent
+>>> prices = pm.min_up(alloc, long_step_routine="demandchange")
+or
+>>> prices = pm.min_up(alloc, long_step_routine="binarysearch")
+
+Find an allocation
+>>> allocation = pm.allocate(alloc)
+
+Check validity of bid lists
+>>> pm.is_valid(alloc)
+
+Compute Lyapunov function at prices p
+>>> pm.lyapunov(alloc, p)
+
+Get a demanded bundle at prices p (not necessarily unique!)
+>>> pm.demanded_bundle(alloc, p)
+
+Notes
+-----
+We take advantage of efficient matrix operations implemented by the Numpy package. In order to do this, the dot bids for each bidder are stored in a single 2d numpy array containing the bid vectors of bidder j as row vectors.
+
+(c) 2019 by Edwin Lock.
+
+See LICENCE file for software licence.
+
+"""
 
 import numpy as np
 from sfm.fujishige_wolfe import fw_sfm, naive_sfm
@@ -97,7 +134,21 @@ class AllocationProblem:
 #     pass
 
 def load_from_json(filename: str) -> AllocationProblem:
-    """Loads an allocation problem from a JSON file."""
+    """Loads an allocation problem from a JSON file.
+    
+    Parameters
+    ----------
+    filename : str
+        Filename (and path to file if required) of data file.
+        Example: 'examples/example1.json'.
+    
+    Returns
+    -------
+    AllocationProblem
+        An AllocationProblem object encoding the allocation problem specified
+        in the JSON file.
+    
+    """
     
     # Read data from file
     with open(filename) as input_file:
@@ -129,7 +180,19 @@ def load_from_json(filename: str) -> AllocationProblem:
     
 def save_to_json(alloc: AllocationProblem,
                  filename: Optional[str] = None) -> None:
-    """Store the allocation problem encoded in the bid lists as a JSON file."""
+    """Store the allocation problem encoded in the bid lists as a JSON file.
+    
+    Parameters
+    ----------
+    alloc: AllocationProblem
+        Allocation problem instance we want to save to a JSON file.
+    filename: str
+        Location and name of output file.
+    
+    Returns
+    -------
+        None
+    """
     
     data = {}
     data['title'] = "Auto-generated"
@@ -151,13 +214,49 @@ def save_to_json(alloc: AllocationProblem,
         json.dump(data, output_file, indent=4)
 
 def demanded_goods(bid_vector: np.ndarray, p: np.ndarray) -> set:
-    """Determine and return the set of goods demanded by bid_vector at p."""
+    """Determine and return the set of goods demanded by bid_vector at p.
+    
+    Parameters
+    ----------
+    bid_vector: 1d np.ndarray
+        A single bid vector.
+    p: 1d np.ndarray
+        A price vector with the same expected length as bid_vector.
+    
+    Returns
+    -------
+    set
+        Set of goods demanded by bid_vector at prices p.
+    
+    """
     
     diff = bid_vector - p
     max_utility = diff.max()
     return np.nonzero(diff == max_utility)[0]
 
 def get_demand_vectors(bidlist: np.ndarray, p: np.ndarray) -> np.ndarray:
+    """Compute a matrix of vectors indicating the demanded goods for each bid.
+    
+    Recall that bidlist is a 2d numpy array consisting of dot bid row vectors.
+    We return a boolean matrix in which the k-th row is a vector v that has
+    entry 1 at the i-th position if good i is demanded by the k-th bid at
+    prices p, and has entry 0 otherwise.
+    
+    Parameters
+    ----------
+    bidlist: 2d np.ndarray
+        A 2d numpy matrix containing all the bids of a certain bidder.
+    p: 1d np.ndarray
+        A price vector.
+    
+    Returns
+    -------
+    np.ndarray
+        A boolean matrix M of the same dimensions as bidlist. M[k][i] = 1 iff
+        good i is demanded by the k-th bid in bidlist at prices p.
+    
+    """
+    
     diff = bidlist - p
     utility = diff.max(axis=1, keepdims=1)
     # initialise demand_vectors
