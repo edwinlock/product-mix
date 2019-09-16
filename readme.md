@@ -27,27 +27,45 @@ Import the product-mix package
 >>> import productmix as pm
 ```
 Load an allocation problem from a file
+```python
 >>> alloc = pm.load_from_json('example data/example1.json')
+```
 
 Find a market-clearing price using unit step steepest descent
+```python
 >>> prices = pm.min_up(alloc, long_step_routine="")
+```
 
 Find market-clearing prices using long step steepest descent
+```python
 >>> prices = pm.min_up(alloc, long_step_routine="demandchange")
+```
 or
+```python
 >>> prices = pm.min_up(alloc, long_step_routine="binarysearch")
+```
 
 Set prices
+```python
 >>> alloc.prices = prices
+```
 
 Find an allocation
+```python
 >>> allocation = pm.allocate(alloc)
+```
 
 Check validity of bid lists
+```python
 >>> pm.is_valid(alloc)
+```
 
 Compute Lyapunov function at prices p
+```python
 >>> pm.lyapunov(alloc, p)
+```
 
 Get a demanded bundle at prices p (not necessarily unique!)
+```python
 >>> pm.demanded_bundle(alloc, p)
+```
