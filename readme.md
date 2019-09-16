@@ -1,7 +1,12 @@
 # About
 
-This is an implementation of the algorithms developed in the working paper by Elizabeth Baldwin, Paul Goldberg,
-Paul Klemperer and Edwin Lock available on the ArXiv at [URL]. The algorithms solve the Product-Mix Auction originally developed by Paul Klemperer (cf. https://www.nuffield.ox.ac.uk/users/klemperer/productmix.pdf); that is, they find a competitive (Walrasian) equilibrium. Computing the equilibrium can be separated into two parts:
+This is an implementation of the algorithms developed in the working paper (BGKL) by Elizabeth Baldwin, Paul Goldberg,
+Paul Klemperer and Edwin Lock available on the ArXiv at [URL]. The algorithms solve the Product-Mix Auction originally
+developed by Paul Klemperer (cf. https://www.nuffield.ox.ac.uk/users/klemperer/productmix.pdf); that is, they find a
+competitive (Walrasian) equilibrium. Installation instructions for this implementation can be found [here](install.md).
+
+
+As described in the above paper, computing the equilibrium can be separated into two parts:
 
 1) Find the component-wise minimal market-clearing price using a steepest
 descent approach. Both long-step methods described in the paper are
@@ -9,8 +14,8 @@ implemented.
 
 2) Find an allocation of the supply (=target) bundle among the various bidders
 so that each bidder receives a bundle they demand at the market-clearing price.
+This is implemented according to algorithm described in the BGKL paper.
 
-Installation instructions can be found in install.md.
 
 ## Example Usage
 
@@ -55,7 +60,9 @@ Print and set market-clearing prices in allocation problem object
 >>> alloc.prices = prices
 ```
 
-Find an allocation
+Compute a valid allocation. Note that running the `pm.allocate(alloc)` method has
+the side effect that all bids in the allocation problem instance `alloc`
+are deleted.
 ```python
 >>> allocation = pm.allocate(alloc)
 >>> print(allocation)
