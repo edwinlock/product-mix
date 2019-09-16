@@ -72,17 +72,21 @@ are deleted!**
 
 ### Miscellaneous methods
 
+Reload the allocation problem from a file
+```python
+>>> alloc = pm.load_from_json('example data/example1.json')
+
 Check validity of bid lists
 ```python
 >>> pm.is_valid(alloc)
 ```
 
-Define some prices vector
+Define some price vector
 ```python
 >>> p = np.array([0,1,1])
 ```
 
-Compute the Lyapunov function at prices p
+Compute the *Lyapunov* function at prices p
 ```python
 >>> pm.lyapunov(alloc, p)
 ```
