@@ -5,7 +5,7 @@ import productmix as pm
 import os
 import csv
 import gc
-gc.disable()
+gc.disable()  # Makes tests more reliable
 
 def generate_file(experiment_name, n, m, M, q, rep):
     filename = ("experiments/{0}/experiment-{1}-{2}-{3}-{4}-{5}.json"
@@ -163,8 +163,7 @@ if __name__ == "__main__":
     ### EXPERIMENTS
     
     # control variables
-    generate = False
-    minup = False
+    generate = True
     allocate = True
     plot = True
 
@@ -184,76 +183,38 @@ if __name__ == "__main__":
     number = 1
 
     ### DEFINE EXPERIMENTS
-    # MinUp
-    # experiment1 = ('experiment1', small_n, m, small_M, q_range, reps, number)
-    # experiment2 = ('experiment2', small_n, m, large_M, q_range, reps, number)
-    # experiment3 = ('experiment3', large_n, m, small_M, q_range, reps, number)
-    # experiment4 = ('experiment4', large_n, m, large_M, q_range, reps, number)
-    # experiment5 = ('experiment5', n_range, m, small_M, small_q, reps, number)
-    # experiment6 = ('experiment6', n_range, m, large_M, small_q, reps, number)
-    # experiment7 = ('experiment7', range(2,16), m, small_M, small_q, reps, number)
-    # Allocate
     experiment8 = ('experiment8', small_n, m, small_M, q_range, reps, 10)
     experiment9 = ('experiment9', large_n, m, small_M, q_range, reps, 10)
     experiment10 = ('experiment10', n_range, m, small_M, small_q, reps, 2)
     experiment11 = ('experiment11', n_range, m, small_M, large_q, reps, 2)
-    experiment12 = ('experiment12', small_n, m_range, small_M, small_q, reps, 10)
-    experiment13 = ('experiment13', small_n, m_range, small_M, large_q, reps, 10)
-    experiment14 = ('experiment14', small_n_range, m, small_M, small_q, reps, 10)
-    experiment15 = ('experiment15', range(2,11), m, small_M, small_q, reps, 10)
+    experiment12 = ('experiment12',small_n,m_range,small_M,small_q,reps,10)
+    experiment13 = ('experiment13',small_n,m_range,small_M,large_q,reps,10)
+    experiment14 = ('experiment14',small_n_range,m,small_M,small_q,reps,10)
+    # experiment15 = ('experiment15',range(2,11),m,small_M,small_q,reps,10)
+    
     ### GENERATE FILES
     if generate:
-        pass
-        # generate_experiment_files(*experiment1)
-        # generate_experiment_files(*experiment2)
-        # generate_experiment_files(*experiment3)
-        # generate_experiment_files(*experiment4)
-        # generate_experiment_files(*experiment5)
-        # generate_experiment_files(*experiment6)
-        # generate_experiment_files(*experiment7)
-
         generate_experiment_files(*experiment8)
-        # generate_experiment_files(*experiment9)
-        # generate_experiment_files(*experiment10)
-        # generate_experiment_files(*experiment11)
-        # generate_experiment_files(*experiment12)
-        # generate_experiment_files(*experiment13)
-        # generate_experiment_files(*experiment14)
+        generate_experiment_files(*experiment9)
+        generate_experiment_files(*experiment10)
+        generate_experiment_files(*experiment11)
+        generate_experiment_files(*experiment12)
+        generate_experiment_files(*experiment13)
+        generate_experiment_files(*experiment14)
         # generate_experiment_files(*experiment15)
 
-    ### MINUP EXPERIMENTS
-    if minup:
-        pass
-        # VARY q
-        # EXPERIMENT 1: MinUp vs BinaryMinUp vs DemandMinUp for small n and M
-        # run_minup_tests(experiment1, 4)
-        # EXPERIMENT 2: MinUp vs BinaryMinUp vs DemandMinUp for small n and large M
-        # run_minup_tests(experiment2, 4)
-        # EXPERIMENT 3: MinUp vs BinaryMinUp vs DemandMinUp for large n and small M
-        # run_minup_tests(experiment3, 4)
-        # EXPERIMENT 4: MinUp vs BinaryMinUp vs DemandMinUp for large n and large M
-        # run_minup_tests(experiment4, 4)
-        # VARY n
-        # EXPERIMENT 5: MinUp vs BinaryMinUp vs DemandMinUp for small q and M
-        # run_minup_tests(experiment5, 1)
-        # EXPERIMENT 6: MinUp vs BinaryMinUp vs DemandMinUp for small q and large M
-        # run_minup_tests(experiment6, 1)
-        # EXPERIMENT 7: MinUp vs BinaryMinUp vs DemandMinUp for n=2..15 and small M
-        # run_minup_tests(experiment7, 1)
-
-    ### ALLOCATE EXPERIMENTS
+    ### RUN EXPERIMENTS
     if allocate:
-        pass
         # VARY q
         run_allocate_test(experiment8, 4)
-        # run_allocate_test(experiment9, 4)
-        # # VARY n
-        # run_allocate_test(experiment10, 1)
-        # run_allocate_test(experiment11, 1)
+        run_allocate_test(experiment9, 4)
+        # VARY n
+        run_allocate_test(experiment10, 1)
+        run_allocate_test(experiment11, 1)
         # VARY m
-        # run_allocate_test(experiment12, 2)
-        # run_allocate_test(experiment13, 2)
-        # run_allocate_test(experiment14, 1)
+        run_allocate_test(experiment12, 2)
+        run_allocate_test(experiment13, 2)
+        run_allocate_test(experiment14, 1)
         # run_allocate_test(experiment15, 1)
 
     ### PLOT GRAPHS
@@ -307,7 +268,7 @@ if __name__ == "__main__":
             filename = 'experiments/figures/{}-{}.eps'.format(exp_name, f)
             plt.savefig(filename, format='eps')
         
-        # plot experiments 14 (and 15)
+        # plot experiments 14 (for 15 change number)
         for i in [14]:
             exp_name = 'experiment{}'.format(i)
             f = 'allocate'
