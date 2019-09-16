@@ -57,6 +57,7 @@ or
 Print and set market-clearing prices in allocation problem object
 ```python
 >>> print(prices)
+[0. 2. 1.]
 >>> alloc.prices = prices
 ```
 
@@ -68,30 +69,37 @@ are deleted!**
 ```python
 >>> allocation = pm.allocate(alloc)
 >>> print(allocation)
+[array([0., 0., 1.])]
 ```
+
 
 ### Miscellaneous methods
 
 Reload the allocation problem from a file
 ```python
 >>> alloc = pm.load_from_json('example data/example1.json')
+```
 
 Check validity of bid lists
 ```python
 >>> pm.is_valid(alloc)
+True
 ```
 
 Define some price vector
 ```python
+>>> import numpy as np
 >>> p = np.array([0,1,1])
 ```
 
 Compute the *Lyapunov* function at prices p
 ```python
 >>> pm.lyapunov(alloc, p)
+4.0
 ```
 
 Get a demanded bundle at prices p (not necessarily unique!)
 ```python
 >>> pm.demanded_bundle(alloc, p)
+array([0., 1., 1.])
 ```
