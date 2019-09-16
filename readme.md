@@ -17,7 +17,7 @@ so that each bidder receives a bundle they demand at the market-clearing price.
 This is implemented according to algorithm described in the BGKL paper.
 
 ### A note on the encoding of prices and bundles
-For an auction with $n$ goods, prices and bundles of goods are represented as (n+1)-dimensional vectors, where the i-th
+For an auction with n goods, prices and bundles of goods are represented as (n+1)-dimensional vectors, where the i-th
 entry corresponds to the i-th good and the 0-th entry corresponds to a notional 'reject' good that is useful for
 technical reasons (see BGKL). In particular, every price vector has an 0-th entry of value 0. Moreover, the allocation
 that is computed consists of a list containing a bundle vector for each bidder, and each vector's 0-th entry denotes
