@@ -15,13 +15,14 @@ Installation instructions can be found in install.md.
 ## Example Usage
 
 Activate the virtual environment and launch an interactive Python shell:
+
 ```console
 $ cd ..path../product-mix
-'''
+```
 ```console
 $ source venv/bin/activate
 $ python
-'''
+```
 
 Import the product-mix package
 >>> import productmix as pm
