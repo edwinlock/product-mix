@@ -193,7 +193,7 @@ def save_to_json(alloc: AllocationProblem,
     -------
         None
     """
-    
+
     data = {}
     data['title'] = "Auto-generated"
     data['date'] = str(datetime.date.today())
@@ -245,7 +245,7 @@ def get_demand_vectors(bidlist: np.ndarray, p: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     bidlist: 2d np.ndarray
-        A 2d numpy matrix containing all the bids of a certain bidder.
+        A 2d numpy matrix containing rows of bid vectors.
     p: 1d np.ndarray
         A price vector.
     
@@ -254,7 +254,7 @@ def get_demand_vectors(bidlist: np.ndarray, p: np.ndarray) -> np.ndarray:
     np.ndarray
         A boolean matrix M of the same dimensions as bidlist. M[k][i] = 1 iff
         good i is demanded by the k-th bid in bidlist at prices p.
-    
+
     """
     
     diff = bidlist - p
@@ -266,14 +266,46 @@ def get_demand_vectors(bidlist: np.ndarray, p: np.ndarray) -> np.ndarray:
     return demand_vectors
 
 def shift(bidlist: np.ndarray, i: int, eps: float) -> None:
-    """Shifts all vectors in bidlist by eps in direction i."""
+    """Shifts all vectors in bidlist by eps in direction i.
+    
+    Effectively, the vector eps*e^i is added to each row in bidlist.
+
+    Parameters
+    ----------
+    bidlist: 2d np.ndarray
+        A 2d numpy matrix containing rows of bid vectors.
+    i: int
+        Some good.
+    eps: float
+        The amount by which bids get shifted in direction i.
+
+    Returns
+    -------
+    None
+    
+    """
     n = bidlist.shape[1]
     char_vector = np.zeros(n)
     char_vector[i] += eps
     bidlist += char_vector
 
-def project(bidlists: np.ndarray, prices: np.ndarray) -> None:
-    """Projects bid vectors of all bidders according to prices."""
+def project(bidlists: list, prices: np.ndarray) -> None:
+    """Projects bid vectors of all bidders according to prices.
+    
+    Parameters
+    ----------
+    bidlists: list of 2d np.arrays
+        A Python list of the bidlists of all bidders.
+    
+    prices: np.ndarray
+        Some price vector.
+    
+    Returns
+    -------
+    None
+    
+    """
+    
     n = len(prices)
     for bidlist in bidlists:
         diff = bidlist - prices
@@ -287,8 +319,23 @@ def project(bidlists: np.ndarray, prices: np.ndarray) -> None:
         bidlist -= subtract
 
 def lyapunov(alloc: AllocationProblem, prices: np.ndarray) -> float:
-    """Implements the Lyapunov function. Efficient implementation.
+    """Implements the Lyapunov function.
+    
+    Parameters
+    ----------
+    alloc: AllocationProblem
+        Allocation problem instance
+    
+    prices: np.ndarray
+        Price vector at which we wish to evaluate the Lyapunov function.
+    
+    Returns
+    -------
+    float
+        Result of evaluating the Lyapunov function.
+
     """
+
     output = np.dot(alloc.residual, prices)
     for j in alloc.bidders:        
         # get the utility for each bid
@@ -297,9 +344,26 @@ def lyapunov(alloc: AllocationProblem, prices: np.ndarray) -> float:
     return output
 
 def demanded_bundle(alloc: AllocationProblem, prices: np.ndarray) -> np.ndarray:
-    """Returns a bundle that is demanded at p by accepting, for each bid, the
+    """Returns a bundle x that is demanded at p by accepting, for each bid, the
     smallest good demanded at p.
+    
+    Note that x may not be uniquely demanded at p!
+    
+    Parameters
+    ----------
+    alloc: AllocationProblem
+        Allocation problem instance
+    
+    prices: np.ndarray
+        Price vector at which we wish to find a demanded bundle.
+    
+    Returns
+    -------
+    np.ndarray
+        Some bundle that is demanded at p.
+    
     """
+    
     bundle = np.zeros(alloc.n, dtype=float)
     for j in alloc.bidders:
         for i in range(len(alloc.bidlists[j])):
@@ -309,11 +373,32 @@ def demanded_bundle(alloc: AllocationProblem, prices: np.ndarray) -> np.ndarray:
     return bundle
 
 def min_up(alloc: AllocationProblem,
-           long_step_routine: str ="binarysearch",
+           long_step_routine: str = "binarysearch",
            prices: np.ndarray = None) -> np.ndarray:
-    """Implements the MinUp algorithm from BGKL. This is a steepest
-    descent algorithm starting from the origin; uses SFM to find the
-    direction.
+    """Implements the MinUp algorithm from BGKL.
+           
+    This is a steepest descent algorithm starting from the origin;
+    it uses submodular minimisation to find the direction.
+    
+    Parameters
+    ----------
+    alloc: AllocationProblem
+        Allocation problem instance
+    
+    long_step_routine: str
+        expected to be the empty string (for unit steps), "binarysearch" or
+        "demandchange" (cf. BGKL, Section 3.1 on longer step sizes)
+    
+    prices: np.ndarray
+        initial price vector (default is 0). Must be a price vector that is
+        element-wise dominated by some market-clearing price vector.
+
+    Returns
+    -------
+    np.ndarray
+        Market-clearing price vector, i.e. the prices at which competitive
+        equilibrium is reached.
+
     """
     steps = 0
     # Initialise starting point
@@ -345,6 +430,25 @@ def min_up(alloc: AllocationProblem,
             steps += 1
 
 def _demand_change(bidlists, prices, S):
+    """Implements the demand change technique for long steps in MinUp.
+    
+    Parameters
+    ----------
+    bidlists: np.ndarray
+        2d Numpy array consisting of rows of bid vectors.
+    
+    prices: np.ndarray
+        Some price vector.
+    S: set
+        set of goods defining the direction e^S.
+        
+    Returns
+    -------
+    int
+        Step length
+    
+    """
+    
     n = len(prices)
     length = np.inf
     for bidlist in bidlists:

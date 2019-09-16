@@ -33,10 +33,10 @@ $ source venv/bin/activate
 $ python
 
 Import the product-mix package
->>> from product-mix import productmix as pm
+>>> import productmix as pm
 
 Load an allocation problem from a file
->>> alloc = pm.load_from_json('examples/example2.json')
+>>> alloc = pm.load_from_json('example data/example1.json')
 
 Find a market-clearing price using unit step steepest descent
 >>> prices = pm.min_up(alloc, long_step_routine="")
@@ -45,6 +45,9 @@ Find market-clearing prices using long step steepest descent
 >>> prices = pm.min_up(alloc, long_step_routine="demandchange")
 or
 >>> prices = pm.min_up(alloc, long_step_routine="binarysearch")
+
+Set prices
+>>> alloc.prices = prices
 
 Find an allocation
 >>> allocation = pm.allocate(alloc)
