@@ -60,9 +60,11 @@ Print and set market-clearing prices in allocation problem object
 >>> alloc.prices = prices
 ```
 
-Compute a valid allocation. Note that running the `pm.allocate(alloc)` method has
+Compute a valid allocation.
+
+**Note that running the `pm.allocate(alloc)` method has
 the side effect that all bids in the allocation problem instance `alloc`
-are deleted.
+are deleted!**
 ```python
 >>> allocation = pm.allocate(alloc)
 >>> print(allocation)
