@@ -43,7 +43,7 @@ Import the product-mix package
 
 Load an allocation problem from a file
 ```python
->>> alloc = pm.load_from_json('example data/example2.json')
+>>> alloc = pm.load_from_json('examples/example2.json')
 ```
 
 Find a market-clearing price using unit step steepest descent
