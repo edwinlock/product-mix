@@ -14,6 +14,7 @@ Installation instructions can be found in install.md.
 
 ## Example Usage
 
+### Initial
 Activate the virtual environment and launch an interactive Python shell:
 
 ```console
@@ -26,6 +27,9 @@ Import the product-mix package
 ```python
 >>> import productmix as pm
 ```
+
+### Solving the Product-Mix auction
+
 Load an allocation problem from a file
 ```python
 >>> alloc = pm.load_from_json('example data/example1.json')
@@ -45,23 +49,28 @@ or
 >>> prices = pm.min_up(alloc, long_step_routine="binarysearch")
 ```
 
-Set prices
+Print and set market-clearing prices in allocation problem object
 ```python
+>>> print(prices)
 >>> alloc.prices = prices
 ```
 
 Find an allocation
 ```python
 >>> allocation = pm.allocate(alloc)
+>>> print(allocation)
 ```
+
+### Miscellaneous methods
 
 Check validity of bid lists
 ```python
 >>> pm.is_valid(alloc)
 ```
 
-Compute Lyapunov function at prices p
+Compute the Lyapunov function at prices p
 ```python
+>>> p = np.array
 >>> pm.lyapunov(alloc, p)
 ```
 
