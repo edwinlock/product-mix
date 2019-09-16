@@ -8,11 +8,11 @@ Please contact edwinlock@gmail.com if you have any issues.
 These are brief instructions for macOS. They should also work for Linux systems.
 
 1. Install Python 3.5 or newer.
-2. Get the files from the GitHub server:
+2. Get the files from the GitHub server
 ```console
 $ git clone https://github.com/edwinlock/product-mix.git
 ```
-3. Set up a virtual environment (venv):
+3. Set up a virtual environment (venv)
 ```console
 $ cd product-mix
 $ python -m venv venv
@@ -21,11 +21,11 @@ $ python -m venv venv
 ```console
 $ source venv/bin/activate
 ```
-5. Install the dependencies:
+5. Install the dependencies
 ```console
 $ pip install -r requirements.txt
 ```
-6. Compile the `derivedgraph` Cython code:
+7. Compile the Cython code in `disjointset/`
 ```console
 $ cd disjointset
 $ python setup.py build_ext --inplace
@@ -52,7 +52,7 @@ $ venv\Scripts\activate.bat
 ```console
 $ python -m pip install -r requirements.txt
 ```
-7. Compile the derived graph Cython code:
+7. Compile the Cython code in `disjointset\`
 ```console
 $ cd disjointset
 $ python setup.py build_ext --inplace
