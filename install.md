@@ -25,7 +25,7 @@ $ source venv/bin/activate
 ```console
 $ pip install -r requirements.txt
 ```
-6. Compile the derived graph Cython code:
+6. Compile the `derivedgraph` Cython code:
 ```console
 $ cd disjointset
 $ python setup.py build_ext --inplace
@@ -36,14 +36,24 @@ $ python setup.py build_ext --inplace
 1. Install Python 3.5 or newer.
 2. Install git, install pip, install virtualenv, install mock
 3. Get the files from the GitHub server:
+```console
 $ git clone https://github.com/edwinlock/product-mix.git
+```
 4. Set up a virtual environment (venv):
+```console
 $ cd product-mix
-% python -m virtualenv venv
+$ python -m virtualenv venv
+```
 5. Activate virtual environment:
+```console
 $ venv\Scripts\activate.bat
+```
 6. Install the dependencies:
+```console
 $ python -m pip install -r requirements.txt
+```
 7. Compile the derived graph Cython code:
+```console
 $ cd disjointset
 $ python setup.py build_ext --inplace
+```
