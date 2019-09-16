@@ -87,7 +87,7 @@ while the second bidder is allocated 4 items of good 1 and one 1 item of good 2.
 
 Reload the allocation problem from a file
 ```python
->>> alloc = pm.load_from_json('example data/example2.json')
+>>> alloc = pm.load_from_json('examples/example2.json')
 ```
 
 Check validity of bid lists
