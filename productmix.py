@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ This module is an implementation of the Product-Mix auction originally developed by Paul Klemperer (cf. https://www.nuffield.ox.ac.uk/users/klemperer/productmix.pdf).
 
-Specifically, we present an implementation of the algorithms developed in the working paper by Elizabeth Baldwin, Paul Goldberg,
+Specifically, we present an implementation of the algorithms developed in the working paper (BGKL) by Elizabeth Baldwin, Paul Goldberg,
 Paul Klemperer and Edwin Lock available on the ArXiv at [URL]. The algorithms solve the Product-Mix Auction; that is, they find a competitive (Walrasian) equilibrium. Computing the equilibrium can be separated into two parts:
 
 1) Find the component-wise minimal market-clearing price using a steepest
@@ -13,34 +13,7 @@ so that each bidder receives a bundle they demand at the market-clearing price.
 
 Examples
 -------
-Launch an interactive Python shell
-$ python
-
-Import the product-mix package
->>> from product-mix import productmix as pm
-
-Load an allocation problem from a file
->>> alloc = pm.load_from_json('examples/example2.json')
-
-Find a market-clearing price using unit step steepest descent
->>> prices = pm.min_up(alloc, long_step_routine="")
-
-Find market-clearing prices using long step steepest descent
->>> prices = pm.min_up(alloc, long_step_routine="demandchange")
-or
->>> prices = pm.min_up(alloc, long_step_routine="binarysearch")
-
-Find an allocation
->>> allocation = pm.allocate(alloc)
-
-Check validity of bid lists
->>> pm.is_valid(alloc)
-
-Compute Lyapunov function at prices p
->>> pm.lyapunov(alloc, p)
-
-Get a demanded bundle at prices p (not necessarily unique!)
->>> pm.demanded_bundle(alloc, p)
+See readme.md for example usage.
 
 Notes
 -----
@@ -464,9 +437,23 @@ def _demand_change(bidlists, prices, S):
 
 def _binary_search(alloc, p, d):
     """Compute step length using the binary search long step from BGKL.
-    Input: price vector p, direction vector d (param S is not used).
-    Output: positive integer.
+    
+    Parameters
+    ----------
+    alloc: AllocationProblem
+        Allocation problem instance
+    p: np.ndarray
+        Price vector.
+    d: np.ndarray
+        direction vector s.t. d in {0,1}^n.
+    
+    Returns
+    -------
+    int:
+        Positive step length
+
     """
+
     M = max([bidlist.max() for bidlist in alloc.bidlists])
     # initialise binary search interval
     lower = 1
@@ -493,8 +480,22 @@ def _binary_search(alloc, p, d):
 
 def procedure1(alloc):
     """Allocate all unambiguous non-marginal bids to the relevant bidder.
-    This corresponds to Procedure 1 in BGKL.
+    
+    This corresponds to Procedure 1 in BGKL. The function deletes all
+    non-marginal bids from all bidlists and updates alloc.partial
+    as well as alloc.residual.
+    
+    Parameters
+    ----------
+    alloc: AllocationProblem
+        Allocation problem instance
+    
+    Returns
+    -------
+    None
+
     """
+
     for j in alloc.bidders:
         demand_vectors = get_demand_vectors(alloc.bidlists[j], alloc.prices)
         non_marginals = np.sum(demand_vectors, axis=1, keepdims=1) == 1
@@ -508,10 +509,27 @@ def procedure1(alloc):
         alloc.weights[j] = alloc.weights[j][mask]
 
 def procedure2(alloc, I, j, i):
-    """Allocate unambiguous marginal bids to the relevant bidder. This
-    corresponds to Procedure 2 in BGKL.
-    Input: key list (I,j), possible link good i (may be None).
+    """Allocate unambiguous marginal bids to the relevant bidder. 
+    
+    This corresponds to Procedure 2 in BGKL.
+    
+    Parameters
+    ----------
+    alloc: AllocationProblem
+        Allocation problem instance
+    I: set
+        Set of goods, the first element of the key list (I,j)
+    j: int
+        Some bidder, the second element of the key list (I,j)
+    i: int or None
+        Link good, if the key list (I,j) has a link good, otherwise None.
+
+    Returns
+    -------
+    None
+    
     """
+
     # Compute the bids BIj of bidder j that are marginal on goods in I.
     demand_vectors = get_demand_vectors(alloc.bidlists[j], alloc.prices)
     goods_vector = np.array([k in I for k in range(0, alloc.n)])
@@ -537,7 +555,27 @@ def procedure2(alloc, I, j, i):
     alloc.weights[j] = alloc.weights[j][~BIj]
 
 def get_g_dash(alloc, p, eps=1):
-    """Returns the function g_dash."""
+    """Returns the function g_dash as defined in BGKL.
+    
+    The function is defined as g_dash(S) := g(p+eps*e^S) - g(p), where g
+    is the Lyapunov function.
+    
+    Parameters
+    ----------
+    alloc: AllocationProblem
+        Allocation problem instance
+    p: np.ndarray
+        price vector
+    eps:
+        parameter
+    
+    Returns
+    -------
+    function:
+        A Python function encoding the function g_dash from BGKL.
+
+    """
+    
     normaliser = lyapunov(alloc, p)
 
     def g_dash(S):
@@ -555,7 +593,9 @@ def get_h_dash(alloc, p, eps=1):
 
 def procedure3(alloc, i, j):
     """ Shift, project and unshift to break ambiguities and simplify the
-    allocation problem. Takes as input a link good i and bidder j such that
+    allocation problem.
+    
+    Takes as input a link good i and bidder j such that
     there exists an edge from i to a key list (I,j) with i in I that lies
     in a circle in the marginal bids graph. This corresponds to Procedure 3
     in BGKL.
@@ -658,8 +698,26 @@ def find_params(alloc):
     return ((None, j), i)
 
 def allocate(alloc, test=False):
-    """Implements the main routine ALLOCATE from BKGL. IMPORTANT:
+    """Implements the main routine ALLOCATE from BKGL.
+    
+    IMPORTANT:
     Assumes that the supply alloc.residual is demanded at prices alloc.p.
+    
+    Parameters
+    ----------
+    alloc: AllocationProblem
+        Allocation problem instance
+    test: bool
+        Set to False by default. If True, the function returns how many times
+        procedures 1 to 3 were called.
+
+    Returns
+    -------
+    list or (list, int, int, int):
+        If test=False, return value is a list of bundles that are
+        allocated to the bidders. If test=True, the number of times that
+        procedures 1 to 3 were called is also returned.
+    
     """
     # Initialise counters for procedures 1,2 and 3
     proc1 = 0
@@ -728,8 +786,10 @@ def _mdF(alloc, i, U):
 
 def is_valid(alloc):
     """Checks whether the bids of bidder are valid (cf. Appendix of BGKL.)
+    
     This code has not been optimised and is probably inefficient.
     """
+    
     invalid_lists = set()
     for bidder in alloc.bidders:
         # Compute all negative bids
@@ -768,13 +828,11 @@ def is_valid(alloc):
                             continue
     return not invalid_lists
 
-### AD HOC TESTS ###
-
+### AD HOC TEST ###
 if __name__ == "__main__":
-    filename = 'example data/test3.json'
+    filename = 'examples/example2.json'
     alloc = load_from_json(filename)
     print("supply: {}".format(alloc.residual))
-    print(alloc.weights)
     alloc.prices = min_up(alloc, long_step_routine="binarysearch")
     print("prices:", alloc.prices)
     print("allocation:", allocate(alloc))

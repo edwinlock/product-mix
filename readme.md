@@ -69,7 +69,7 @@ Print and set market-clearing prices in allocation problem object
 >>> alloc.prices = prices
 ```
 
-Compute a valid allocation. Outputs a list of bundles.
+Compute a valid allocation. This outputs a list of bundles.
 
 **Note that running the `pm.allocate(alloc)` method has
 the side effect that all bids in the allocation problem instance `alloc`
