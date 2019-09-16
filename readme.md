@@ -1,12 +1,12 @@
 # About
 
 This is an implementation of the algorithms developed in the working paper (BGKL) by Elizabeth Baldwin, Paul Goldberg,
-Paul Klemperer and Edwin Lock available on the ArXiv at [URL]. The algorithms solve the Product-Mix Auction originally
-developed by Paul Klemperer (cf. https://www.nuffield.ox.ac.uk/users/klemperer/productmix.pdf); that is, they find a
-competitive (Walrasian) equilibrium. Installation instructions for this implementation can be found [here](install.md).
+Paul Klemperer and Edwin Lock available on the ArXiv at [URL]. The algorithms solve the Product-Mix Auction (originally
+developed by Paul Klemperer, see https://www.nuffield.ox.ac.uk/users/klemperer/productmix.pdf) that uses the tropical
+bidding language with positive *and* negative bids; that is, they find a competitive (Walrasian) equilibrium.
+Installation instructions for this implementation can be found [here](install.md).
 
-
-As described in the above paper, computing the equilibrium can be separated into two parts:
+As described in BGKL, computing the equilibrium can be separated into two parts:
 
 1) Find the component-wise minimal market-clearing price using a steepest
 descent approach. Both long-step methods described in the paper are
@@ -16,6 +16,11 @@ implemented.
 so that each bidder receives a bundle they demand at the market-clearing price.
 This is implemented according to algorithm described in the BGKL paper.
 
+For an auction with $n$ goods, prices and bundles of goods are represented as $n+1$-dimensional vectors, where the $i$-th
+entry corresponds to the $i$-th good and the $0$-th entry corresponds to a notional 'reject' good that is useful for
+technical reasons (see BGKL). In particular, care must be taken to add a $0$-th entry of value 0 to any price vector.
+Moreover, the allocation that is computed consists of a bundle vector for each bidder, and each vector's $0$-th entry
+denotes how many notional 'reject' goods it receives.
 
 ## Example Usage
 
