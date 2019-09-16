@@ -77,9 +77,13 @@ Check validity of bid lists
 >>> pm.is_valid(alloc)
 ```
 
+Define some prices vector
+```python
+>>> p = np.array([0,1,1])
+```
+
 Compute the Lyapunov function at prices p
 ```python
->>> p = np.array
 >>> pm.lyapunov(alloc, p)
 ```
 
