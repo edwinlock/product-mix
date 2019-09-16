@@ -17,16 +17,15 @@ Installation instructions can be found in install.md.
 Activate the virtual environment and launch an interactive Python shell:
 
 ```console
-$ cd ..path../product-mix
-```
-```console
+$ cd ..path..to../product-mix
 $ source venv/bin/activate
 $ python
 ```
 
 Import the product-mix package
+```python
 >>> import productmix as pm
-
+```
 Load an allocation problem from a file
 >>> alloc = pm.load_from_json('example data/example1.json')
 
