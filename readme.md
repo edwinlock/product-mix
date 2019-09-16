@@ -2,7 +2,7 @@
 
 This is an implementation of the algorithms developed in the working paper (BGKL) by Elizabeth Baldwin, Paul Goldberg,
 Paul Klemperer and Edwin Lock available on the ArXiv at [URL]. The algorithms solve the Product-Mix Auction (originally
-developed by Paul Klemperer, see https://www.nuffield.ox.ac.uk/users/klemperer/productmix.pdf) that uses the tropical
+developed by Paul Klemperer, see [original paper](https://www.nuffield.ox.ac.uk/users/klemperer/productmix.pdf)) that uses the tropical
 bidding language with positive *and* negative bids; that is, they find a competitive (Walrasian) equilibrium.
 
 
