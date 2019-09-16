@@ -4,7 +4,9 @@ This is an implementation of the algorithms developed in the working paper (BGKL
 Paul Klemperer and Edwin Lock available on the ArXiv at [URL]. The algorithms solve the Product-Mix Auction (originally
 developed by Paul Klemperer, see https://www.nuffield.ox.ac.uk/users/klemperer/productmix.pdf) that uses the tropical
 bidding language with positive *and* negative bids; that is, they find a competitive (Walrasian) equilibrium.
-Installation instructions for this implementation can be found [here](install.md).
+
+
+**Installation instructions for this implementation can be found [here](install.md).**
 
 As described in BGKL, computing a competitive equilibrium can be separated into two parts:
 
