@@ -2,7 +2,7 @@
 """ This module is an implementation of the Product-Mix auction originally developed by Paul Klemperer (cf. https://www.nuffield.ox.ac.uk/users/klemperer/productmix.pdf).
 
 Specifically, we present an implementation of the algorithms developed in the working paper (BGKL) by Elizabeth Baldwin, Paul Goldberg,
-Paul Klemperer and Edwin Lock available on the ArXiv at [URL]. The algorithms solve the Product-Mix Auction; that is, they find a competitive (Walrasian) equilibrium. Computing the equilibrium can be separated into two parts:
+Paul Klemperer and Edwin Lock available on the ArXiv at https://arxiv.org/abs/1909.07313. The algorithms solve the Product-Mix Auction; that is, they find a competitive (Walrasian) equilibrium. Computing the equilibrium can be separated into two parts:
 
 1) Find the component-wise minimal market-clearing price using a steepest
 descent approach. Both long-step methods described in the paper are
