@@ -25,7 +25,7 @@ $ source venv/bin/activate
 ```console
 $ pip install -r requirements.txt
 ```
-7. Compile the Cython code in `disjointset/`
+6. Compile the Cython code in `disjointset/`
 ```console
 $ cd disjointset
 $ python setup.py build_ext --inplace
